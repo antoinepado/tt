@@ -1,0 +1,93 @@
+/*******************************************************************************
+* Instrument: <instrument name>
+*
+* %I
+* Written by: <your name (email)>
+* Date: <current date>
+* Origin: <your institution>
+* Version: <instrument version>
+* %INSTRUMENT_SITE: Templates
+*
+* <instrument short description>
+*
+* %D
+* <instrument description>
+*
+* Example: <parameters=values>
+*
+* %P
+* <parameter1>: [<unit>] <parameter1 description>
+* ...
+* 
+* %L
+* <reference/HTML link>
+*
+* %E
+*******************************************************************************/
+DEFINE INSTRUMENT template_body_simple(E=10000)
+
+DECLARE 
+%{
+    //Put in E, it will calculate the Bragg angle
+    //E eV
+    double angle_mono;
+%}
+
+INITIALIZE
+%{
+    angle_mono = RAD2DEG*asin((12398.42/E)/(2.0*(5.4309/sqrt(3.0))));
+    printf("angle mono %g",angle_mono);
+%}
+
+TRACE
+
+COMPONENT origin = Progress_bar()
+AT (0, 0, 0) RELATIVE ABSOLUTE
+
+COMPONENT bending_magnet = Bending_magnet(
+    E0=22,   
+    B=1.72,
+    Ee=2.75,
+    dE = 18)
+AT (0, 0, 0) RELATIVE PREVIOUS
+
+// insert components here (e.g. Insert -> Source -> ...)
+COMPONENT bragg_crystal = Bragg_crystal()
+AT (0, 0, 20) RELATIVE PREVIOUS
+ROTATED (-angle_mono, 0, 0) RELATIVE PREVIOUS
+/*EXTEND
+%{ 
+	if (!SCATTERED) ABSORB;
+%}*/
+
+COMPONENT arm = Arm()
+AT (0, 0, 0) RELATIVE PREVIOUS
+ROTATED (-angle_mono, 0, 0) RELATIVE PREVIOUS
+
+COMPONENT bragg_crystal_two = Bragg_crystal()
+AT (0, 0.01, 0.05) RELATIVE bragg_crystal
+ROTATED (angle_mono, 0, 0) RELATIVE PREVIOUS
+/*EXTEND
+%{ 
+	if (!SCATTERED) ABSORB;
+%}*/
+
+COMPONENT arm_two = Arm()
+AT (0, 0, 0) RELATIVE PREVIOUS
+ROTATED (angle_mono, 0, 0) RELATIVE PREVIOUS
+
+COMPONENT e_monitor = E_monitor(
+    nE=100, 
+    filename="e_monitor.dat", 
+    xwidth=1, 
+    yheight=1, 
+    Emin=1, 
+    Emax=39, 
+    restore_xray=1)
+AT (0, 0, 1) RELATIVE PREVIOUS
+
+FINALLY
+%{
+%}
+
+END
